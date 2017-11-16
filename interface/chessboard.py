@@ -49,6 +49,7 @@ class Chessboard:
         self.history = { WHITE: [], BLACK: [] }
         self.onMove = WHITE
         self.check = False
+        self.enPassant = [False]
         self.setPossibleMoves()
 
     def __str__(self):
@@ -79,7 +80,8 @@ class Chessboard:
                     moves.append([field[0]+1, field[1]+1])
                 if field[1] > 0 and self.board[field[0]+1][field[1]-1] < 0:
                     moves.append([field[0]+1, field[1]-1])
-                # TODO add EN_PASSANT support
+                if self.enPassant[0] and self.enPassant[1][0] == field:
+                    moves.append([self.enPassant[1][1]])
                 return moves
 
             elif figure == KNIGHT:
@@ -206,7 +208,8 @@ class Chessboard:
                     moves.append([field[0]-1, field[1]+1])
                 if field[1] > 0 and self.board[field[0]-1][field[1]-1] > 0:
                     moves.append([field[0]-1, field[1]-1])
-                # TODO add EN_PASSANT support
+                if self.enPassant[0] and self.enPassant[1][0] == field:
+                    moves.append([self.enPassant[1][1]])
                 return moves
 
             elif figure == KNIGHT_B:
@@ -367,6 +370,32 @@ class Chessboard:
             return STALEMATE
         return False
 
+    def canBeTakenEnPassant(self, move):
+        enPassantPossible = False
+        if abs(move[0][0] - move[1][0]) == 2:
+            if self.onMove == WHITE:
+                if move[1][1] < 7 and self.board[move[1][0]][move[1][1]+1] == PAWN_B:
+                    enPassantPossible = True
+                    enPassantFrom = [move[1][0], move[1][1]+1]
+                if move[1][1] > 0 and self.board[move[1][0]][move[1][1]-1] == PAWN_B:
+                    enPassantPossible = True
+                    enPassantFrom = [move[1][0], move[1][1]-1]
+                enPassantTo = [move[1][0]-1, move[1][1]]
+            else:
+                if move[1][1] < 7 and self.board[move[1][0]][move[1][1]+1] == PAWN_W:
+                    enPassantPossible = True
+                    enPassantFrom = [move[1][0], move[1][1]+1]
+                if move[1][1] > 0 and self.board[move[1][0]][move[1][1]-1] == PAWN_W:
+                    enPassantPossible = True
+                    enPassantFrom = [move[1][0], move[1][1]-1]
+                enPassantTo = [move[1][0]+1, move[1][1]]
+
+        if enPassantPossible:
+            print "EN_PASSANT POSSIBLE!"
+            self.enPassant = [True, [enPassantFrom, enPassantTo]]
+        else:
+            self.enPassant = [False]
+
     def makeMove(self, move, promotion=False):
         print 'self.possibleMoves = {}\n'.format(self.possibleMoves)
         if move not in self.possibleMoves:
@@ -380,8 +409,14 @@ class Chessboard:
         self.board[move[0][0]][move[0][1]] = EMPTY
         self.board[move[1][0]][move[1][1]] = figure
 
+        # check for potential en-passant move
+        if abs(figure) == PAWN:
+            self.canBeTakenEnPassant(move)
+
         self.setPossibleMoves()
-        self.attackedFields = [self.possibleMoves[i][1] for i in range(len(self.possibleMoves))]
+        self.attackedFields = [self.possibleMoves[i][1] for i in range(len(self.possibleMoves)) \
+            if abs(self.board[self.possibleMoves[i][0][0]][self.possibleMoves[i][0][1]]) != PAWN \
+            or self.possibleMoves[i][1][1] != self.possibleMoves[i][0][1]]
         print 'self.attackedFields = {}\n'.format(self.attackedFields)
 
         if self.onMove == WHITE:
