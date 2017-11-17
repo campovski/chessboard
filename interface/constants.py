@@ -17,7 +17,6 @@ CAPTURE = 111
 # Error codes
 MOVE_INVALID = 400
 
-
 # Piece declarations.
 EMPTY = 0
 PAWN = 1
@@ -39,7 +38,7 @@ QUEEN_B = -QUEEN
 KING_W = KING
 KING_B = -KING
 
-# Pieces representations
+# Pieces' representations
 PIECE_NAMES = {
     PAWN: '',
     BISHOP: 'B',
