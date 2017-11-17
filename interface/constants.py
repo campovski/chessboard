@@ -1,22 +1,24 @@
-POSITION_DEFAULT = 0
+POSITION_DEFAULT = 10000
 
 # Players
 WHITE = 'White'
 BLACK = 'Black'
 
 # Game situations
-MATE = 'm'
-STALEMATE = 'sm'
-CHECK = 'c'
+MATE = 200
+STALEMATE = 201
+CHECK = 202
 
 # Special moves
-EN_PASSANT = 10
-CAPTURE = 11
+EN_PASSANT = 110
+CAPTURE = 111
 # PROMOTION = 12
-MOVE_INVALID = 13
+
+# Error codes
+MOVE_INVALID = 400
 
 
-# Figure declarations.
+# Piece declarations.
 EMPTY = 0
 PAWN = 1
 BISHOP = 2
@@ -37,8 +39,8 @@ QUEEN_B = -QUEEN
 KING_W = KING
 KING_B = -KING
 
-# Figures representations
-FIGURE_NAMES = {
+# Pieces representations
+PIECE_NAMES = {
     PAWN: '',
     BISHOP: 'B',
     KNIGHT: 'N',
