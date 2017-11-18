@@ -358,31 +358,20 @@ class Chessboard:
 
         return moves
 
-    #TODO
+    # get all possible moves, even those that leave king in check
     def setPossibleMoves(self):
         possibleMoves = []
-        if not self.check:
-            for i in range(8):
-                for j in range(8):
-                    if (self.onMove == WHITE and self.board[i][j] > 0) or \
-                            (self.onMove == BLACK and self.board[i][j] < 0):
-                        movesWithPiece = self.getMovesWithPiece([i, j])
-                        for move in movesWithPiece:
-                            possibleMoves.append([[i, j], move])
-        else: # TODO can block check with another piece
-            found = False
-            for i in range(8):
-                for j in range(8):
-                    if (self.onMove == WHITE and self.board[i][j] == KING_W) or \
-                            (self.onMove == BLACK and self.board[i][j] == KING_B):
-                        moveWithKing = self.getMovesWithPiece([i, j])
-                        possibleMoves = [[[i, j], move] for move in moveWithKing]
-                        found = True
-                        break
-                if found:
-                    break
-        self.possibleMoves = possibleMoves
+        for i in range(8):
+            for j in range(8):
+                if (self.onMove == WHITE and self.board[i][j] > 0) or \
+                        (self.onMove == BLACK and self.board[i][j] < 0):
+                    movesWithPiece = self.getMovesWithPiece([i, j])
+                    for move in movesWithPiece:
+                        possibleMoves.append([[i, j], move])
 
+        self.possibleMoves = [possibleMoves[i] for i in range(len(possibleMoves)) if not self.isCheckAfterMove(possibleMoves[i])]
+        print self.possibleMoves
+        #self.possibleMoves = possibleMoves
         if self.debug:
             print 'self.possibleMoves = {}\n'.format(self.possibleMoves)
 
@@ -447,6 +436,61 @@ class Chessboard:
                             self.attackedFields.append([i-1, j+1])
                         if j > 0 and self.board[i-1][j-1] >= 0:
                             self.attackedFields.append([i-1, j-1])
+
+    def isCheckAfterMove(self, move):
+        originalMove = move
+        pieceMoving = self.board[move[0][0]][move[0][1]]
+        pieceOnArrival = self.board[move[1][0]][move[1][1]]
+        self.board[originalMove[0][0]][originalMove[0][1]] = EMPTY
+        self.board[originalMove[1][0]][originalMove[1][1]] = pieceMoving
+
+        # local possible moves method
+        if self.onMove == WHITE:
+            self.onMove = BLACK
+        else:
+            self.onMove = WHITE
+        possibleMoves = []
+        for i in range(8):
+            for j in range(8):
+                if (self.onMove == WHITE and self.board[i][j] > 0) or \
+                        (self.onMove == BLACK and self.board[i][j] < 0):
+                    movesWithPiece = self.getMovesWithPiece([i, j])
+                    for move in movesWithPiece:
+                        possibleMoves.append([[i, j], move])
+
+        # local attackedFields instance
+        attackedFields = [possibleMoves[i][1] for i in range(len(possibleMoves)) \
+            if abs(self.board[possibleMoves[i][0][0]][possibleMoves[i][0][1]]) != PAWN ]
+
+        # local addAttackedFieldsByPawns method and isCheck
+        if self.onMove == WHITE:
+            for i in range(8):
+                for j in range(8):
+                    if self.board[i][j] == PAWN_W:
+                        if j < 7 and self.board[i+1][j+1] <= 0:
+                            attackedFields.append([i+1, j+1])
+                        if j > 0 and self.board[i+1][j-1] <= 0:
+                            attackedFields.append([i+1, j-1])
+            check = KING_B in [self.board[af[0]][af[1]] for af in attackedFields]
+        else:
+            for i in range(8):
+                for j in range(8):
+                    if self.board[i][j] == PAWN_B:
+                        if j < 7 and self.board[i-1][j+1] >= 0:
+                            attackedFields.append([i-1, j+1])
+                        if j > 0 and self.board[i-1][j-1] >= 0:
+                            attackedFields.append([i-1, j-1])
+            check = KING_W in [self.board[af[0]][af[1]] for af in attackedFields]
+
+        self.board[originalMove[0][0]][originalMove[0][1]] = pieceMoving
+        self.board[originalMove[1][0]][originalMove[1][1]] = pieceOnArrival
+
+        if self.onMove == WHITE:
+            self.onMove = BLACK
+        else:
+            self.onMove = WHITE
+
+        return check
 
     def makeMove(self, move, promotion=False):
         if self.debug:
@@ -529,7 +573,7 @@ class Chessboard:
         else:
             self.onMove = WHITE
 
-        # piece out if in special position
+        # figure out if in special position
         specialPosition = self.isSpecialPosition()
         self.changeClock(specialPosition)
 
@@ -541,7 +585,9 @@ class Chessboard:
 
         if self.whiteIsCastling:
             self.whiteKingHasNotMoved = False
+            self.whiteIsCastling = False
         elif self.blackIsCastling:
             self.blackKingHasNotMoved = False
+            self.blackIsCastling = False
 
         return specialPosition
